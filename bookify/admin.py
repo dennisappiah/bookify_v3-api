@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html, urlencode
 from django.urls import reverse
-from .models import Category, Book, Customer
+from .models import Category, Book, Customer, Rental, BookImage
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -13,7 +13,7 @@ class CategoryAdmin(admin.ModelAdmin):
     def books_count(self, category: Category):
         url = (reverse('admin:bookify_book_changelist') + '?'
                + urlencode({'category__id': str(category.id)}))
-        return format_html('<a href="{}">{}</a>', url, category.books_count)
+        return format_html(f'<a href="{url}">{category.books_count}</a>')
 
 
     """overriding the queryset to include `books_count` attribute on Category object"""
@@ -21,12 +21,27 @@ class CategoryAdmin(admin.ModelAdmin):
         return super().get_queryset(request).annotate(books_count=Count('books'))
 
 
+class BookImageInline(admin.TabularInline):
+    model = BookImage
+    readonly_fields = ['thumbnail']
+    extra = 0
+    min_num = 0
+    max_num = 10
+
+    def thumbnail(self, instance):
+        if instance.image.name != "":
+            return format_html(f'<img src="{instance.image.url}" class="thumbnail"/>')
+        return ""
+
+
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
     autocomplete_fields= ['category']
+    inlines = [BookImageInline]
     list_display = ['title', 'category_name', 'numberInStock', 'dailyRentalRate']
+    search_fields = ['title']
 
-    def category_name(self, book:Book):
+    def category_name(self, book:Book) -> str:
         return book.category.name
 
 
@@ -38,3 +53,9 @@ class CustomerAdmin(admin.ModelAdmin):
     ordering = ['user__first_name', 'user__last_name']
     list_per_page = 10
     search_fields = ['first_name__istartswith', 'last_name__istartswith']
+
+
+@admin.register(Rental)
+class RentalAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['book', 'customer']
+    list_display = ['book', 'customer', 'rentalFee', 'dateOut', 'dateReturned']
