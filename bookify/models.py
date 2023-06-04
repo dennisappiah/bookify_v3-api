@@ -64,6 +64,8 @@ class Rental(models.Model):
         ])
     dateOut = models.DateTimeField(auto_now=True)
     dateReturned = models.DateField()
+
+    
     
 
 

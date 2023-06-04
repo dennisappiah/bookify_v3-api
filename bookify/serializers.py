@@ -1,6 +1,7 @@
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from .models import Category, Book, Comment, BookImage, Customer, Rental
-from django.db import transaction
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -62,14 +63,44 @@ class RentalSerializer(serializers.ModelSerializer):
 
 
 class AddRentalSerializer(serializers.ModelSerializer):
+    book_id = serializers.IntegerField()
+    customer_id = serializers.IntegerField()
+
     class Meta:
         model = Rental
-        fields = ['book', 'customer', 'rentalFee', 'dateReturned']
+        fields = ['book_id', 'customer_id' ,'rentalFee', 'dateReturned']
 
+    def validate_book_id(self, book_id):
+        if not Book.objects.filter(pk=book_id).exists():
+            raise serializers.ValidationError('No book with the given id was found')
+        return book_id
+
+    def validate_customer_id(self, customer_id):
+        if not Customer.objects.filter(pk=customer_id).exists():
+            raise serializers.ValidationError("No customer with the given id was found")
+        return customer_id
 
     def save(self, **kwargs):
         with transaction.atomic():
-            customer = Customer.objects.get()
-        return super().save(**kwargs)
+            book_id = self.validated_data['book_id']
+            customer_id = self.validated_data['customer_id']
+            
+            customer = get_object_or_404(Customer, pk=customer_id)
+            book = get_object_or_404(Book, pk=book_id)
+
+            if book.numberInStock <= 0:
+                raise serializers.ValueError("Book is out of stock.")
+        
+            rental = Rental.objects.create(customer=customer, book=book, **self.validated_data)
+            book.numberInStock -= 1
+            book.save()
+
+        return rental
+                 
+            
+            
+            
+
+            
 
     
