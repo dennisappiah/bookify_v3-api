@@ -96,7 +96,11 @@ class AddRentalSerializer(serializers.ModelSerializer):
             book.save()
 
         return rental
+
+
+   
                  
+
             
             
             

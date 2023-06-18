@@ -10,6 +10,10 @@ pillow = "*"
 djangorestframework = "*"
 drf-nested-routers = "*"
 django-debug-toolbar = "*"
+django-filter = "*"
+djoser = "*"
+djangorestframework-simplejwt = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 
